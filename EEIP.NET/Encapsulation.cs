@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Sres.Net.EEIP
@@ -139,7 +140,7 @@ namespace Sres.Net.EEIP
                        && VendorID1 == other.VendorID1
                        && DeviceType1 == other.DeviceType1
                        && ProductCode1 == other.ProductCode1
-                       && Equals(Revision1, other.Revision1)
+                       && Revision1.SequenceEqual(other.Revision1)
                        && Status1 == other.Status1
                        && SerialNumber1 == other.SerialNumber1
                        && ProductNameLength == other.ProductNameLength
