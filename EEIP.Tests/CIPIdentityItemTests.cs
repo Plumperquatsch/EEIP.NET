@@ -8,11 +8,6 @@ namespace Sres.Net.EEIP.Tests
 {
     public class CIPIdentityItemTests
     {
-        [SetUp]
-        public void Setup()
-        {
-        }
-
         [Test]
         public void CIPIdentityItemTestTwoItemsShallBeEqual()
         {
