@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace EEIP.Tests
+namespace Sres.Net.EEIP.Tests
 {
     public class TestHelper
     {

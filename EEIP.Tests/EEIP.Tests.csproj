@@ -8,6 +8,8 @@
     <AssemblyVersion>1.0.0.1</AssemblyVersion>
 
     <FileVersion>1.0.0.1</FileVersion>
+
+    <RootNamespace>Sres.Net.EEIP.Tests</RootNamespace>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">

@@ -8,7 +8,7 @@ using System.Runtime.InteropServices;
 using System.Text;
 using static Sres.Net.EEIP.Encapsulation;
 
-namespace EEIP.Tests
+namespace Sres.Net.EEIP.Tests
 {
     [TestFixture()]
     public class SocketAddressTests

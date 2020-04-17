@@ -4,7 +4,7 @@ using System;
 using System.Text;
 using static Sres.Net.EEIP.Encapsulation;
 
-namespace EEIP.Tests
+namespace Sres.Net.EEIP.Tests
 {
     public class CIPIdentityItemTests
     {
