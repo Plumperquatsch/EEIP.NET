@@ -11,9 +11,9 @@ namespace Sres.Net.EEIP
         public ushort Length { get; set; }
         public uint SessionHandle { get; set; }
         public StatusEnum Status { get; set; }
-        private readonly byte[] senderContext = new byte[8];
+        public byte[] SenderContext { get; set; } = new byte[8];
         private readonly uint options = 0;
-        public List<byte> CommandSpecificData = new List<byte>();
+        public List<byte> CommandSpecificData { get; set; } = new List<byte>();
 
         /// <summary>
         ///     Table 2-3.3 Error Codes
@@ -61,14 +61,14 @@ namespace Sres.Net.EEIP
             returnValue[9] = (byte)((ushort)Status >> 8);
             returnValue[10] = (byte)((ushort)Status >> 16);
             returnValue[11] = (byte)((ushort)Status >> 24);
-            returnValue[12] = senderContext[0];
-            returnValue[13] = senderContext[1];
-            returnValue[14] = senderContext[2];
-            returnValue[15] = senderContext[3];
-            returnValue[16] = senderContext[4];
-            returnValue[17] = senderContext[5];
-            returnValue[18] = senderContext[6];
-            returnValue[19] = senderContext[7];
+            returnValue[12] = SenderContext[0];
+            returnValue[13] = SenderContext[1];
+            returnValue[14] = SenderContext[2];
+            returnValue[15] = SenderContext[3];
+            returnValue[16] = SenderContext[4];
+            returnValue[17] = SenderContext[5];
+            returnValue[18] = SenderContext[6];
+            returnValue[19] = SenderContext[7];
             returnValue[20] = (byte)options;
             returnValue[21] = (byte)((ushort)options >> 8);
             returnValue[22] = (byte)((ushort)options >> 16);

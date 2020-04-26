@@ -1,5 +1,4 @@
-﻿using Sres.Net.EEIP.Tests;
-using NUnit.Framework;
+﻿using NUnit.Framework;
 using Sres.Net.EEIP;
 using System;
 using System.Collections.Generic;
