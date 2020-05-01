@@ -17,11 +17,10 @@ namespace Sres.Net.EEIP.Tests
         public uint SessionHandle { get; private set; }
 
         public int EeipPort { get; private set; }
-        private Task EeipListener { get; set; }
 
-        private CancellationTokenSource ListenerCancellation { get; set; }
-        public Socket SessionSocket { get; private set; }
-
+        private CancellationTokenSource? ListenerCancellation;
+        private Socket? SessionSocket;
+        private Task? EeipListener;
 
         public EeipDeviceMock(int eeipPort = 44818)
         {
@@ -32,7 +31,7 @@ namespace Sres.Net.EEIP.Tests
         private void StartListener()
         {
             ListenerCancellation = new CancellationTokenSource();
-            EeipListener = Task.Run(() =>
+            this.EeipListener = Task.Run(() =>
             {
                 IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
                 IPAddress ipAddress = ipHostInfo.AddressList[0];
@@ -40,10 +39,10 @@ namespace Sres.Net.EEIP.Tests
 
                 while (!ListenerCancellation.IsCancellationRequested)
                 {
+                    Socket? listener = null;
                     try
                     {
-                        //Socket listener = new Socket(ipAddress.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
-                        Socket listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
+                        listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
                         listener.Bind(localEndPoint);
                         listener.Listen(10);
                         Debug.WriteLine("EeipDeviceMock starts listening on TCP");
@@ -63,8 +62,23 @@ namespace Sres.Net.EEIP.Tests
                         Debug.WriteLine("Failed to listen on TCP port: " + ex.Message);
                         Connected = false;
                     }
+                    finally
+                    {
+                        listener = StopListener(listener);
+                    }
                 }
-            }, ListenerCancellation.Token);
+            }, this.ListenerCancellation.Token);
+        }
+
+        private Socket? StopListener(Socket? listener)
+        {
+            SessionRegistered = false;
+            Connected = false;
+            listener?.Dispose();
+            SessionSocket?.Dispose();
+            listener = null;
+            SessionSocket = null;
+            return listener;
         }
 
         private void HandleReceivedEeipRequest(byte[] receiveBuffer)
@@ -99,7 +113,9 @@ namespace Sres.Net.EEIP.Tests
             {
                 if (disposing)
                 {
-                    ListenerCancellation.Cancel();
+                    ListenerCancellation?.Cancel();
+                    SessionSocket?.Dispose();
+                    SessionSocket = null;
                 }
 
                 disposedValue = true;

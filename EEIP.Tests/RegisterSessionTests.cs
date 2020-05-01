@@ -17,12 +17,27 @@ namespace Sres.Net.EEIP.Tests
         public async Task RegisterSessionShallSucceed()
         {
             // Arrange
-            using var eeipDevice = new EeipDeviceMock();
+            var port = TestHelper.GetAvailablePort();
+            using var eeipDevice = new EeipDeviceMock(port);
             using EEIPClient eeipClient = new Sres.Net.EEIP.EEIPClient();
-            Uri deviceUri = new UriBuilder("tcp", "localhost", 44818).Uri;
+            Uri deviceUri = new UriBuilder("tcp", "localhost", port).Uri;
 
             // Act
             var sessionHandle = await eeipClient.RegisterSessionAsync(deviceUri);
+        }
+
+        [Test]
+        public async Task RegisterSessionTimeOut()
+        {
+            // Arrange
+            var port = TestHelper.GetAvailablePort();
+            using var eeipDevice = new EeipDeviceMock(port);
+            using EEIPClient eeipClient = new Sres.Net.EEIP.EEIPClient();
+            Uri deviceUri = new UriBuilder("tcp", "localhost", port).Uri;
+
+            // Act
+            var sessionHandle = await eeipClient.RegisterSessionAsync(deviceUri);
+
         }
     }
 }
