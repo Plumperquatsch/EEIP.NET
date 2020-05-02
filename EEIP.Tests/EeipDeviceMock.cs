@@ -12,6 +12,7 @@ namespace Sres.Net.EEIP.Tests
 {
     public class EeipDeviceMock : IDisposable
     {
+        public ushort EncapsulationProtocolVersion { get; } = 1;
         public bool Connected { get; private set; }
         public bool SessionRegistered { get; private set; }
         public uint SessionHandle { get; private set; }
@@ -48,19 +49,21 @@ namespace Sres.Net.EEIP.Tests
                         Debug.WriteLine("EeipDeviceMock starts listening on TCP");
 
                         SessionSocket = listener.Accept();
-                        Connected = true;
-
-                        while (!ListenerCancellation.IsCancellationRequested)
+                        if (SessionSocket != null)
                         {
-                            byte[] receiveBuffer = new byte[1024];
-                            int bytesReceived = SessionSocket.Receive(receiveBuffer);
-                            HandleReceivedEeipRequest(receiveBuffer); 
+                            Connected = true;
+
+                            while (!ListenerCancellation.IsCancellationRequested && SessionSocket.Connected)
+                            {
+                                byte[] receiveBuffer = new byte[1024];
+                                int bytesReceived = SessionSocket.Receive(receiveBuffer);
+                                HandleReceivedEeipRequest(receiveBuffer);
+                            }
                         }
                     }
                     catch (Exception ex)
                     {
                         Debug.WriteLine("Failed to listen on TCP port: " + ex.Message);
-                        Connected = false;
                     }
                     finally
                     {
@@ -84,25 +87,63 @@ namespace Sres.Net.EEIP.Tests
         private void HandleReceivedEeipRequest(byte[] receiveBuffer)
         {
             Debug.WriteLine($"EeipDeviceMock received {receiveBuffer.Count()} bytes data from socket.");
-            if (!SessionRegistered)
+            var scannerRequest = EEIPTestExtensions.ExpandEncapsulation(receiveBuffer);
+            switch (scannerRequest.Command)
             {
-                Encapsulation scannerRequest = EEIPTestExtensions.ExpandEncapsulation(receiveBuffer);
-                if(scannerRequest.Command == Encapsulation.CommandsEnum.RegisterSession)
-                {
-                    Debug.WriteLine("Session registered.");
-                    ConfirmSessionRegistration(scannerRequest.SenderContext);
-                    SessionRegistered = true;
-                }
+                case Encapsulation.CommandsEnum.NOP:
+                    break;
+                case Encapsulation.CommandsEnum.RegisterSession:
+                    Debug.WriteLine("Register Session.");
+                    HandleRegisterSessionRequest(scannerRequest);
+                    break;
+                case Encapsulation.CommandsEnum.UnRegisterSession:
+                    Debug.WriteLine("Unregister Session.");
+                    HandleUnRegisterSessionRequest(scannerRequest);
+                    break;
+                case Encapsulation.CommandsEnum.ListServices:
+                    break;
+                case Encapsulation.CommandsEnum.ListIdentity:
+                    break;
+                case Encapsulation.CommandsEnum.ListInterfaces:
+                    break;
+                case Encapsulation.CommandsEnum.SendRRData:
+                    break;
+                case Encapsulation.CommandsEnum.SendUnitData:
+                    break;
+                case Encapsulation.CommandsEnum.IndicateStatus:
+                    break;
+                case Encapsulation.CommandsEnum.Cancel:
+                    break;
+                default:
+                    break;
             }
         }
 
-        private void ConfirmSessionRegistration(byte[] senderContext)
+        private void HandleRegisterSessionRequest(Encapsulation scannerRequest)
         {
+            EeipRegisterSessionCommandData commandData = EeipRegisterSessionCommandData.Expand(new Span<byte>(scannerRequest.CommandSpecificData.ToArray()));
+
+            if (SessionRegistered)
+            {
+                EncapsRegisterSessionReply alreadyRegisterdErrorReply = new EncapsRegisterSessionReply(Encapsulation.StatusEnum.InvalidCommand, 0, scannerRequest.SenderContext);
+                SessionSocket?.Send(alreadyRegisterdErrorReply.SerializeToBytes());
+            }
+            if ((commandData.EncapsulationProtocolVersion != EncapsulationProtocolVersion) || (commandData.Options != 0))
+            {
+                EncapsRegisterSessionReply unsupportedProtocolReply = new EncapsRegisterSessionReply(Encapsulation.StatusEnum.UnsupportedEncapsulationProtocol, 0, scannerRequest.SenderContext);
+                SessionSocket?.Send(unsupportedProtocolReply.SerializeToBytes());
+            }
             Random random = new Random();
             SessionHandle = (uint)random.Next();
-            EncapsRegisterSessionReply registerReply = new EncapsRegisterSessionReply(sessionHandlle: SessionHandle, senderContext:senderContext);
-            SessionSocket.Send(registerReply.SerializeToBytes());
+            EncapsRegisterSessionReply registerReply = new EncapsRegisterSessionReply(sessionHandlle: SessionHandle, senderContext: scannerRequest.SenderContext);
+            SessionSocket?.Send(registerReply.SerializeToBytes());
+            SessionRegistered = true;
         }
+        private void HandleUnRegisterSessionRequest(Encapsulation scannerRequest)
+        {
+            ListenerCancellation?.Cancel();
+        }
+
 
         #region IDisposable Support
         private bool disposedValue = false; // To detect redundant calls
