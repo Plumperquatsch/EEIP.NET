@@ -17,36 +17,96 @@ namespace Sres.Net.EEIP.Tests
         public bool SessionRegistered { get; private set; }
         public uint SessionHandle { get; private set; }
 
+        public IPAddress DeviceIp { get; private set; }
         public int EeipPort { get; private set; }
 
         private CancellationTokenSource? ListenerCancellation;
         private Socket? SessionSocket;
         private Task? EeipListener;
 
-        public EeipDeviceMock(int eeipPort = 44818)
+        private CancellationTokenSource? UdpListenerCancellation;
+
+        public EeipDeviceMock(Uri uri, int eeipPort = 44818)
         {
-            EeipPort = eeipPort;
-            StartListener();
+            if (!uri.IsAbsoluteUri)
+            {
+                throw new ArgumentException("EeipDeviceMock: Address must be absolute", nameof(uri));
+            }
+            ushort port;
+            if (!uri.IsDefaultPort)
+            {
+                port = (ushort)uri.Port;
+            }
+            else
+            {
+                if (uri.Scheme.Equals("ethernet-ip-1", StringComparison.OrdinalIgnoreCase))
+                {
+                    port = 0x08AE;
+                }
+                else
+                {
+                    // ethernet-ip-2 or default
+                    port = 0xAF12;
+                }
+            }
+
+            DeviceIp = Dns.GetHostAddresses(uri.Host)
+                .First(x => x.AddressFamily == AddressFamily.InterNetwork);
+
+            EeipPort = port;
+            StartEeipUdpListener();
+            StartEeipListener();
         }
 
-        private void StartListener()
+        private void StartEeipUdpListener()
+        {
+            UdpListenerCancellation = new CancellationTokenSource();
+            this.BroadcastEeipListener = Task.Run(() =>
+            {
+                Debug.WriteLine($"EeipDeviceMock: Start listening for broadcasts on UDP port 0x{EeipPort.ToString("X")}");
+                IPEndPoint udpEndPoint = new IPEndPoint(IPAddress.Any, EeipPort);
+                using UdpClient udpListener = new UdpClient(udpEndPoint);
+                Connected = true;
+                try
+                {
+                    while (!UdpListenerCancellation.IsCancellationRequested)
+                    {
+                        IPEndPoint clientEndPoint = new IPEndPoint(IPAddress.Any, EeipPort);
+                        byte[] receivedBytes = udpListener.Receive(ref clientEndPoint);
+                        Debug.WriteLine($"EeipDeviceMock: Received a UDP package with {receivedBytes.Length} bytes from {clientEndPoint.Address}");
+                        HandleReceivedEeipRequest(receivedBytes);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"EeipDeviceMock: Failed to listen for broadcasts on UDP port 0x{EeipPort.ToString("X")}: " + ex.Message);
+                }
+                finally
+                {
+                    udpListener.Close();
+                }
+            }, this.UdpListenerCancellation.Token);
+        }
+
+        private void StartEeipListener()
         {
             ListenerCancellation = new CancellationTokenSource();
+
             this.EeipListener = Task.Run(() =>
             {
-                IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
-                IPAddress ipAddress = ipHostInfo.AddressList[0];
-                IPEndPoint localEndPoint = new IPEndPoint(IPAddress.Any, EeipPort);
+                //IPHostEntry ipHostInfo = Dns.GetHostEntry(Dns.GetHostName());
+                //IPAddress ipAddress = ipHostInfo.AddressList[0];
+                IPEndPoint localEndPoint = new IPEndPoint(DeviceIp, EeipPort);
 
-                while (!ListenerCancellation.IsCancellationRequested)
+                Socket? listener = null;
+                try
                 {
-                    Socket? listener = null;
-                    try
+                    while (!ListenerCancellation.IsCancellationRequested)
                     {
                         listener = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Unspecified);
                         listener.Bind(localEndPoint);
-                        listener.Listen(10);
-                        Debug.WriteLine("EeipDeviceMock starts listening on TCP");
+                        listener.Listen(1);
+                        Debug.WriteLine($"EeipDeviceMock: Start listening on TCP port 0x{EeipPort.ToString("X")}");
 
                         SessionSocket = listener.Accept();
                         if (SessionSocket != null)
@@ -61,14 +121,14 @@ namespace Sres.Net.EEIP.Tests
                             }
                         }
                     }
-                    catch (Exception ex)
-                    {
-                        Debug.WriteLine("Failed to listen on TCP port: " + ex.Message);
-                    }
-                    finally
-                    {
-                        listener = StopListener(listener);
-                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"EeipDeviceMock: Failed to listen on TCP port 0x{EeipPort.ToString("X")}: " + ex.Message);
+                }
+                finally
+                {
+                    listener = StopListener(listener);
                 }
             }, this.ListenerCancellation.Token);
         }
@@ -86,35 +146,43 @@ namespace Sres.Net.EEIP.Tests
 
         private void HandleReceivedEeipRequest(byte[] receiveBuffer)
         {
-            Debug.WriteLine($"EeipDeviceMock received {receiveBuffer.Count()} bytes data from socket.");
+            Debug.WriteLine($"EeipDeviceMock: Received {receiveBuffer.Count()} bytes data from socket.");
             var scannerRequest = EEIPTestExtensions.ExpandEncapsulation(receiveBuffer);
             switch (scannerRequest.Command)
             {
                 case Encapsulation.CommandsEnum.NOP:
                     break;
                 case Encapsulation.CommandsEnum.RegisterSession:
-                    Debug.WriteLine("Register Session.");
+                    Debug.WriteLine("EeipDeviceMock: Received Register Session request.");
                     HandleRegisterSessionRequest(scannerRequest);
                     break;
                 case Encapsulation.CommandsEnum.UnRegisterSession:
-                    Debug.WriteLine("Unregister Session.");
+                    Debug.WriteLine("EeipDeviceMock: Received Unregister Session request.");
                     HandleUnRegisterSessionRequest(scannerRequest);
                     break;
                 case Encapsulation.CommandsEnum.ListServices:
+                    Debug.WriteLine("EeipDeviceMock: Received unimplemented List Services request.");
                     break;
                 case Encapsulation.CommandsEnum.ListIdentity:
+                    Debug.WriteLine("EeipDeviceMock: Received List Identity request.");
                     break;
                 case Encapsulation.CommandsEnum.ListInterfaces:
+                    Debug.WriteLine("EeipDeviceMock: Received unimplemented List Interfaces request.");
                     break;
                 case Encapsulation.CommandsEnum.SendRRData:
+                    Debug.WriteLine("EeipDeviceMock: Received unimplemented Send RR Data request.");
                     break;
                 case Encapsulation.CommandsEnum.SendUnitData:
+                    Debug.WriteLine("EeipDeviceMock: Received unimplemented Send Unit Data request.");
                     break;
                 case Encapsulation.CommandsEnum.IndicateStatus:
+                    Debug.WriteLine("EeipDeviceMock: Received unimplemented Indicate Status request.");
                     break;
                 case Encapsulation.CommandsEnum.Cancel:
+                    Debug.WriteLine("EeipDeviceMock: Received unimplementd Cancel request.");
                     break;
                 default:
+                    Debug.WriteLine("EeipDeviceMock: Received undefined request.");
                     break;
             }
         }
@@ -138,6 +206,8 @@ namespace Sres.Net.EEIP.Tests
             EncapsRegisterSessionReply registerReply = new EncapsRegisterSessionReply(sessionHandlle: SessionHandle, senderContext: scannerRequest.SenderContext);
             SessionSocket?.Send(registerReply.SerializeToBytes());
             SessionRegistered = true;
+            Debug.WriteLine($"EeipDeviceMock: Registered session with handle {SessionHandle}.");
+
         }
         private void HandleUnRegisterSessionRequest(Encapsulation scannerRequest)
         {
@@ -157,6 +227,7 @@ namespace Sres.Net.EEIP.Tests
                     ListenerCancellation?.Cancel();
                     SessionSocket?.Dispose();
                     SessionSocket = null;
+                    UdpListenerCancellation?.Cancel();
                 }
 
                 disposedValue = true;

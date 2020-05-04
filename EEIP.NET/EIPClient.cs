@@ -185,8 +185,9 @@ namespace Sres.Net.EEIP
         /// <summary>
         /// List and identify potential targets. This command shall be sent as broadcast massage using UDP.
         /// </summary>
+        /// <param name="port">Port of the target device (default should be 0xAF12)</param> 
         /// <returns><see cref="Encapsulation.CIPIdentityItem"/> contains the received informations from all devices </returns>	
-        public async Task<List<Encapsulation.CIPIdentityItem>> ListIdentityAsync()
+        public async Task<List<Encapsulation.CIPIdentityItem>> ListIdentityAsync(ushort targetPort = 0xAF12)
         {
             foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
             {
@@ -204,7 +205,7 @@ namespace Sres.Net.EEIP
                             var sendData = new byte[24];
                             sendData[0] = 0x63; //Command for "ListIdentity"
                             var udpClient = new UdpClient();
-                            var endPoint = new IPEndPoint(System.Net.IPAddress.Parse(multicastAddress), 44818);
+                            var endPoint = new IPEndPoint(System.Net.IPAddress.Parse(multicastAddress), targetPort);
                             await udpClient.SendAsync(sendData, sendData.Length, endPoint);
 
                             var s = new UdpState {e = endPoint, u = udpClient};

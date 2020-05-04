@@ -20,9 +20,9 @@ namespace Sres.Net.EEIP.Tests
         {
             // Arrange
             var port = TestHelper.GetAvailablePort();
-            using var eeipDevice = new EeipDeviceMock(port);
-            using EEIPClient eeipClient = new Sres.Net.EEIP.EEIPClient();
             Uri deviceUri = new UriBuilder("tcp", "localhost", port).Uri;
+            using var eeipDevice = new EeipDeviceMock(deviceUri);
+            using EEIPClient eeipClient = new Sres.Net.EEIP.EEIPClient();
 
             // Act
             var sessionHandle = await eeipClient.RegisterSessionAsync(deviceUri);
@@ -52,7 +52,7 @@ namespace Sres.Net.EEIP.Tests
             }
 
             // Act
-            using var eeipDevice = new EeipDeviceMock(port);
+            using var eeipDevice = new EeipDeviceMock(deviceUri);
             sessionHandle = await eeipClient.RegisterSessionAsync(deviceUri);
             
             // Assert
@@ -66,9 +66,9 @@ namespace Sres.Net.EEIP.Tests
         {
             // Arrange
             var port = TestHelper.GetAvailablePort();
-            using var eeipDevice = new EeipDeviceMock(port);
-            using EEIPClient eeipClient = new Sres.Net.EEIP.EEIPClient();
             Uri deviceUri = new UriBuilder("tcp", "localhost", port).Uri;
+            using var eeipDevice = new EeipDeviceMock(deviceUri);
+            using EEIPClient eeipClient = new Sres.Net.EEIP.EEIPClient();
 
             var sessionHandle = await eeipClient.RegisterSessionAsync(deviceUri);
             sessionHandle.Should().Be(eeipDevice.SessionHandle);
