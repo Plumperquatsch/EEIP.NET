@@ -131,6 +131,42 @@ namespace Sres.Net.EEIP
                 State1 = receivedData[receivedData.Length - 1];
             }
 
+            public CIPIdentityItem(SocketAddress socketAddress, 
+                ushort vendorID1, ushort deviceType1, ushort productCode1, byte[] revision1, ushort status1, 
+                uint serialNumber1, string productName1, byte state1,
+                ushort encapsulationProtocolVersion = 1)
+            {
+                if (revision1 == null)
+                    throw new ArgumentNullException(nameof(revision1));
+
+                if (productName1 == null)
+                    throw new ArgumentNullException(nameof(productName1));
+
+                if (revision1.Length != 2)
+                {
+                    throw new ArgumentException("The size of the device revision array must be 2", nameof(revision1));
+                }
+
+                if (productName1.Length > 255)
+                {
+                    throw new ArgumentOutOfRangeException(nameof(productName1), "The product name must have a maximum length of 255");
+                }
+
+                ItemTypeCode = 0xC;
+                EncapsulationProtocolVersion = encapsulationProtocolVersion;
+                SocketAddress = socketAddress;
+                VendorID1 = vendorID1;
+                DeviceType1 = deviceType1;
+                ProductCode1 = productCode1;
+                Revision1 = revision1;
+                Status1 = status1;
+                SerialNumber1 = serialNumber1;
+                ProductName1 = productName1;
+                ProductNameLength = (byte)ProductName1.Length;
+                State1 = state1;
+                ItemLength = (ushort)(37 + ProductNameLength);
+            }
+
             protected bool Equals(CIPIdentityItem other)
             {
                 return ItemTypeCode == other.ItemTypeCode

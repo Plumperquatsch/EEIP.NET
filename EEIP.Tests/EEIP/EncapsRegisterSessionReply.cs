@@ -3,7 +3,7 @@ using System.Buffers.Binary;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Sres.Net.EEIP.Tests
+namespace Sres.Net.EEIP.Tests.EEIP
 {
     public class EncapsRegisterSessionReply : Encapsulation
     {

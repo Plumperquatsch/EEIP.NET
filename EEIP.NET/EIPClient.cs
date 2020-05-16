@@ -212,6 +212,7 @@ namespace Sres.Net.EEIP
 
                             var asyncResult = udpClient.BeginReceive(ReceiveIdentityCallback, s);
 
+                            
                             await Task.Delay(1000);
                         }
                     }
