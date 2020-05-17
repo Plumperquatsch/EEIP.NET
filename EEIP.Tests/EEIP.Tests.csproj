@@ -5,9 +5,9 @@
 
         <IsPackable>false</IsPackable>
 
-        <AssemblyVersion>1.0.0.5</AssemblyVersion>
+        <AssemblyVersion>1.0.0.7</AssemblyVersion>
 
-        <FileVersion>1.0.0.5</FileVersion>
+        <FileVersion>1.0.0.7</FileVersion>
 
         <RootNamespace>Sres.Net.EEIP.Tests</RootNamespace>
         <Nullable>enable</Nullable>

@@ -30,8 +30,10 @@ namespace Sres.Net.EEIP.Tests
             byte[] commandSpecificData = new byte[2 + identityBytes.Length];
 
             Span<byte> commandSpecificDataSpan = new Span<byte>(commandSpecificData);
+            
             Span<byte> itemCountSpan = commandSpecificDataSpan.Slice(0, 2);
             BinaryPrimitives.WriteUInt16LittleEndian(itemCountSpan, 1);
+            
             Span<byte> identitySpan = commandSpecificDataSpan.Slice(2, identityBytes.Length);
             identityBytes.CopyTo(identitySpan);
 

@@ -15,7 +15,6 @@ namespace Sres.Net.EEIP.Tests
         [Test()]
         public void SerializePacketAsUnconnectedDataWithSocketAddressTest()
         {
-
             // Arrange
             var seed = TestHelper.CreateRandomSeed();
             var random = new Random(seed);
@@ -41,7 +40,7 @@ namespace Sres.Net.EEIP.Tests
             var itemCount = BinaryPrimitives.ReadUInt16LittleEndian(commonPacketSpan.Slice(0, 2));
             var addressItem = BinaryPrimitives.ReadUInt16LittleEndian(commonPacketSpan.Slice(2, 2));
             var addressLength = BinaryPrimitives.ReadUInt16LittleEndian(commonPacketSpan.Slice(4, 2));
-            
+
             var dataItem = BinaryPrimitives.ReadUInt16LittleEndian(commonPacketSpan.Slice(6, 2));
             var dataLength = BinaryPrimitives.ReadUInt16LittleEndian(commonPacketSpan.Slice(8, 2));
             var data = commonPacketSpan.Slice(10, dataCount);
@@ -60,7 +59,7 @@ namespace Sres.Net.EEIP.Tests
             dataItem.Should().Be(commonPacket.DataItem);
             dataLength.Should().Be(commonPacket.DataLength);
             data.ToArray().Should().BeEquivalentTo(testData);
-            
+
             sockaddrInfoItem.Should().Be(commonPacket.SockaddrInfoItem_O_T);
             sockaddrInfoLength.Should().Be(commonPacket.SockaddrInfoLength);
             sinFamily.Should().Be(commonPacket.SocketaddrInfo_O_T.SIN_family);

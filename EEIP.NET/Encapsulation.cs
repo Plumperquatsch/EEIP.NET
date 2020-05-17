@@ -164,7 +164,7 @@ namespace Sres.Net.EEIP
                 ProductName1 = productName1;
                 ProductNameLength = (byte)ProductName1.Length;
                 State1 = state1;
-                ItemLength = (ushort)(37 + ProductNameLength);
+                ItemLength = (ushort)(34 + ProductNameLength);
             }
 
             protected bool Equals(CIPIdentityItem other)

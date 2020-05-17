@@ -9,7 +9,8 @@ namespace Sres.Net.EEIP.Tests.CIP
     {
         public static byte[] SerializeToBytes(this Encapsulation.CIPIdentityItem identity)
         {
-            byte[] identityBytes = new byte[identity.ItemLength];
+            int cipIdentityItemLengthWithoutProductName = 34;
+            byte[] identityBytes = new byte[identity.ProductName1.Length + 1 + cipIdentityItemLengthWithoutProductName + 4];
             Span<byte> identitySpan = new Span<byte>(identityBytes);
 
             Span<byte> itemIdSpan = identitySpan.Slice(0, 2);
@@ -22,11 +23,12 @@ namespace Sres.Net.EEIP.Tests.CIP
             Span<byte> revisionSpan = identitySpan.Slice(28, 2);
             Span<byte> statusSpan = identitySpan.Slice(30, 2);
             Span<byte> serialNumberSpan = identitySpan.Slice(32, 4);
-            Span<byte> productNameSpan = identitySpan.Slice(36, identity.ProductNameLength);
-            Span<byte> stateSpan = identitySpan.Slice(36 + identity.ProductNameLength, 1);
+            Span<byte> productNameLenngthSpan = identitySpan.Slice(36, 1);
+            Span<byte> productNameSpan = identitySpan.Slice(37, identity.ProductNameLength);
+            Span<byte> stateSpan = identitySpan.Slice(38 + identity.ProductNameLength, 1);
 
             BinaryPrimitives.WriteUInt16LittleEndian(itemIdSpan, identity.ItemTypeCode);
-            BinaryPrimitives.WriteUInt16LittleEndian(itemLengthSpan, identity.ProductNameLength);
+            BinaryPrimitives.WriteUInt16LittleEndian(itemLengthSpan, (ushort)(cipIdentityItemLengthWithoutProductName + identity.ProductNameLength));
             BinaryPrimitives.WriteUInt16LittleEndian(encapsulationProtocolVersionSpan, identity.EncapsulationProtocolVersion);
             identity.SocketAddress.SerializeToBytes().CopyTo(socketAddressSpan);
             BinaryPrimitives.WriteUInt16LittleEndian(vendoerIdSpan, identity.VendorID1);
@@ -35,6 +37,7 @@ namespace Sres.Net.EEIP.Tests.CIP
             identity.Revision1.CopyTo(revisionSpan);
             BinaryPrimitives.WriteUInt16LittleEndian(statusSpan, identity.Status1);
             BinaryPrimitives.WriteUInt32LittleEndian(serialNumberSpan, identity.SerialNumber1);
+            productNameLenngthSpan[0] = (byte)identity.ProductName1.Length;
             Encoding.ASCII.GetBytes(identity.ProductName1).CopyTo(productNameSpan);
             stateSpan[0] = identity.State1;
 
